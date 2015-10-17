@@ -20,46 +20,46 @@ FirstState.prototype.constructor = FirstState;
 const StateHandler = function StateHandler(opts) {
     "use strict";
     "use strict";
-    let currentIndex = 0;
-    let states = [];
+    this.currentIndex = 0;
+    this.states = [];
     let options = opts || {
             loop: false // specifies whether states should loop from end - beginning and vice versa
         };
 
-    let currentState = function currentState() {
-        return states[currentIndex]
+    let currentState = () => {
+        return this.states[this.currentIndex]
     };
 
-    let add = function add(state) {
-        states.push(state)
+    let add = (state) => {
+        this.states.push(state)
     };
 
-    let remove = function remove(index) {
-        states.remove(index)
+    let remove = (index) => {
+        this.states.remove(index)
     };
 
-    let next = function next() {
+    let next = () => {
         "use strict";
         // Call nextOut on the current state if it exists
         if (typeof currentState().nextOut === 'function') currentState().nextOut.call(currentState());
 
         // Set the current state to the next index. Loop if specified.
-        if (currentIndex + 1 < states.length) { currentIndex += currentIndex; }
-        else if (options.loop) { currentIndex = 0; }
+        if (this.currentIndex + 1 < this.states.length) { this.currentIndex += 1; }
+        else if (options.loop) { this.currentIndex = 0; }
         else { throw new FinalState(); }
 
         // Call nextIn on the new current state
         if (typeof currentState().nextIn === 'function') currentState().nextIn.call(currentState());
     };
 
-    let prev = function prev() {
+    let prev = () => {
         "use strict";
         // Call prevOut on the current state if it exists
         if (typeof currentState().prevOut === 'function') currentState().prevOut.call(currentState());
 
         // Set the current state to the previous index. Loop if specified.
-        if (currentIndex - 1 >= 0) { currentIndex -= currentIndex; }
-        else if (options.loop) { currentIndex = states.length; }
+        if (this.currentIndex - 1 >= 0) { this.currentIndex -= 1; }
+        else if (options.loop) { this.currentIndex = this.states.length; }
         else { throw new FirstState(); }
 
         // Call prevIn on the new current state

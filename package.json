@@ -1,6 +1,6 @@
 {
   "name": "d3-state-handler",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "A module for managing states allowing users to toggle between d3 charts.",
   "main": "lib/d3-state-handler.js",
   "scripts": {
