@@ -4,7 +4,8 @@
   "description": "A module for managing states allowing users to toggle between d3 charts.",
   "main": "lib/d3-state-handler.js",
   "scripts": {
-    "test": "node ./node_modules/intern/bin/intern-client config=tests/intern"
+    "test": "node ./node_modules/intern/bin/intern-client config=tests/intern",
+    "prepublish": "node ./node-modules/intern/bin/intern-client config=tests/intern"
   },
   "babel": {
     "plugins": [
