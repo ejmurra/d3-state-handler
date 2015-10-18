@@ -1,7 +1,41 @@
-define(["exports", "module"], function (exports, module) {
-    // Error handling
-    "use strict";
+define(['exports', 'module'], function (exports, module) {
+    // polyfill object assign
+    'use strict';
 
+    if (!Object.assign) {
+        Object.defineProperty(Object, 'assign', {
+            enumerable: false,
+            configurable: true,
+            writable: true,
+            value: function value(target) {
+                'use strict';
+                if (target === undefined || target === null) {
+                    throw new TypeError('Cannot convert first argument to object');
+                }
+
+                var to = Object(target);
+                for (var i = 1; i < arguments.length; i++) {
+                    var nextSource = arguments[i];
+                    if (nextSource === undefined || nextSource === null) {
+                        continue;
+                    }
+                    nextSource = Object(nextSource);
+
+                    var keysArray = Object.keys(nextSource);
+                    for (var nextIndex = 0, len = keysArray.length; nextIndex < len; nextIndex++) {
+                        var nextKey = keysArray[nextIndex];
+                        var desc = Object.getOwnPropertyDescriptor(nextSource, nextKey);
+                        if (desc !== undefined && desc.enumerable) {
+                            to[nextKey] = nextSource[nextKey];
+                        }
+                    }
+                }
+                return to;
+            }
+        });
+    }
+
+    // Error handling
     function FinalState(message) {
         "use strict";
         this.name = 'FinalStateError';
@@ -33,12 +67,15 @@ define(["exports", "module"], function (exports, module) {
         var data = options.data || {};
 
         var currentState = function currentState() {
+            Object.assign(states[currentIndex].data, data);
             return states[currentIndex];
         };
 
         var add = function add(state) {
-            state['__index'] = currentIndex;
-            if (!state.name) state.name = String(currentIndex);
+            var index = states.length;
+            state.data = Object.assign({}, data);
+            state['__index'] = index;
+            if (!state.name) state.name = String(index);
             states.push(state);
 
             return _this;
@@ -74,13 +111,14 @@ define(["exports", "module"], function (exports, module) {
             if (typeof currentState().nextIn === 'function') currentState().nextIn.call(data);
 
             // Call run on the new current state
-            if (typeof currentState().run === 'function') currentState().run();
+            if (typeof currentState().run === 'function') currentState().run.call(data);
             return _this;
         };
 
         var prev = function prev() {
             "use strict";
             // Call prevOut on the current state if it exists
+
             if (typeof currentState().prevOut === 'function') currentState().prevOut.call(data);
 
             // Set the current state to the previous index. Loop if specified.
@@ -93,10 +131,10 @@ define(["exports", "module"], function (exports, module) {
             }
 
             // Call prevIn on the new current state
-            if (typeof currentState().nextIn === 'function') currentState().nextIn.call(data);
+            if (typeof currentState().prevIn === 'function') currentState().prevIn.call(data);
 
             // Call run on new current state;
-            if (typeof currentState().run === 'function') currentState().run();
+            if (typeof currentState().run === 'function') currentState().run.call(data);
             return _this;
         };
 

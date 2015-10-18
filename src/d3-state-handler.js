@@ -1,3 +1,37 @@
+// polyfill object assign
+if (!Object.assign) {
+    Object.defineProperty(Object, 'assign', {
+        enumerable: false,
+        configurable: true,
+        writable: true,
+        value: function(target) {
+            'use strict';
+            if (target === undefined || target === null) {
+                throw new TypeError('Cannot convert first argument to object');
+            }
+
+            var to = Object(target);
+            for (var i = 1; i < arguments.length; i++) {
+                var nextSource = arguments[i];
+                if (nextSource === undefined || nextSource === null) {
+                    continue;
+                }
+                nextSource = Object(nextSource);
+
+                var keysArray = Object.keys(nextSource);
+                for (var nextIndex = 0, len = keysArray.length; nextIndex < len; nextIndex++) {
+                    var nextKey = keysArray[nextIndex];
+                    var desc = Object.getOwnPropertyDescriptor(nextSource, nextKey);
+                    if (desc !== undefined && desc.enumerable) {
+                        to[nextKey] = nextSource[nextKey];
+                    }
+                }
+            }
+            return to;
+        }
+    });
+}
+
 // Error handling
 function FinalState(message) {
     "use strict";
@@ -27,12 +61,15 @@ const StateHandler = function StateHandler(opts) {
     let data = options.data || {};
 
     let currentState = () => {
+        Object.assign(states[currentIndex].data,data)
         return states[currentIndex];
     };
 
     let add = (state) => {
-        state['__index'] = currentIndex;
-        if (!state.name) state.name = String(currentIndex);
+        let index = states.length;
+        state.data = Object.assign({},data);
+        state['__index'] = index;
+        if (!state.name) state.name = String(index);
         states.push(state);
 
         return this;
@@ -64,13 +101,14 @@ const StateHandler = function StateHandler(opts) {
         if (typeof currentState().nextIn === 'function') currentState().nextIn.call(data);
 
         // Call run on the new current state
-        if (typeof currentState().run === 'function') currentState().run();
+        if (typeof currentState().run === 'function') currentState().run.call(data);
         return this;
     };
 
     let prev = () => {
         "use strict";
         // Call prevOut on the current state if it exists
+
         if (typeof currentState().prevOut === 'function') currentState().prevOut.call(data);
 
         // Set the current state to the previous index. Loop if specified.
@@ -79,10 +117,10 @@ const StateHandler = function StateHandler(opts) {
         else { throw new FirstState(); }
 
         // Call prevIn on the new current state
-        if (typeof currentState().nextIn === 'function') currentState().nextIn.call(data);
+        if (typeof currentState().prevIn === 'function') currentState().prevIn.call(data);
 
         // Call run on new current state;
-        if (typeof currentState().run === 'function') currentState().run();
+        if (typeof currentState().run === 'function') currentState().run.call(data);
         return this;
     };
 
