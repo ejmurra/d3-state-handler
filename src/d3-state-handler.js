@@ -19,51 +19,71 @@ FirstState.prototype.constructor = FirstState;
 
 const StateHandler = function StateHandler(opts) {
     "use strict";
-    "use strict";
-    this.currentIndex = 0;
-    this.states = [];
+    let currentIndex = 0;
+    let states = [];
     let options = opts || {
             loop: false // specifies whether states should loop from end - beginning and vice versa
         };
+    let data = options.data || {};
 
     let currentState = () => {
-        return this.states[this.currentIndex]
+        return states[currentIndex];
     };
 
     let add = (state) => {
-        this.states.push(state)
+        state['__index'] = currentIndex;
+        if (!state.name) state.name = String(currentIndex);
+        states.push(state);
+
+        return this;
     };
 
-    let remove = (index) => {
-        this.states.remove(index)
+    let remove = (name) => {
+        let index = states.indexOf(states.filter(function(state) {
+            return state.name === String(name);
+        }));
+
+        if (index > -1) {
+            array.splice(index, 1);
+        }
+
+        return this;
     };
 
     let next = () => {
         "use strict";
         // Call nextOut on the current state if it exists
-        if (typeof currentState().nextOut === 'function') currentState().nextOut.call(currentState());
+        if (typeof currentState().nextOut === 'function') currentState().nextOut.call(data);
 
         // Set the current state to the next index. Loop if specified.
-        if (this.currentIndex + 1 < this.states.length) { this.currentIndex += 1; }
-        else if (options.loop) { this.currentIndex = 0; }
+        if (currentIndex + 1 < states.length) { currentIndex += 1; }
+        else if (options.loop) { currentIndex = 0; }
         else { throw new FinalState(); }
 
         // Call nextIn on the new current state
-        if (typeof currentState().nextIn === 'function') currentState().nextIn.call(currentState());
+        if (typeof currentState().nextIn === 'function') currentState().nextIn.call(data);
+
+        // Call run on the new current state
+        if (typeof currentState().run === 'function') currentState().run();
+        return this;
     };
 
     let prev = () => {
         "use strict";
         // Call prevOut on the current state if it exists
-        if (typeof currentState().prevOut === 'function') currentState().prevOut.call(currentState());
+        if (typeof currentState().prevOut === 'function') currentState().prevOut.call(data);
 
         // Set the current state to the previous index. Loop if specified.
-        if (this.currentIndex - 1 >= 0) { this.currentIndex -= 1; }
-        else if (options.loop) { this.currentIndex = this.states.length; }
+        if (currentIndex - 1 >= 0) { currentIndex -= 1; }
+        else if (options.loop) { currentIndex = states.length; }
         else { throw new FirstState(); }
 
         // Call prevIn on the new current state
-        if (typeof currentState().nextIn === 'function') currentState().nextIn.call(currentState());
+        if (typeof currentState().nextIn === 'function') currentState().nextIn.call(data);
+
+        // Call run on new current state;
+        if (typeof currentState().run === 'function') currentState().run();
+        return this;
     };
 
     return {

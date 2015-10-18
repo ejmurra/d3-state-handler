@@ -8,5 +8,8 @@
   },
   "author": "Eli Murray",
   "license": "MIT",
-  "dependencies": {}
+  "dependencies": {},
+  "devDependencies": {
+    "intern": "^3.0.6"
+  }
 }
