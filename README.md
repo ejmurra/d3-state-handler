@@ -57,7 +57,7 @@ Calls render on the current state.
 Returns the current state object.
 
 ## States
-States are the building blocks for d3 stories created with d3-state-handler. States must have a `render` method but all other methods are optional. All methods take receive a data object as the first parameter and must return a data object. See the example state below.
+States are the building blocks for d3 stories created with d3-state-handler. States must have a `render` method but all other methods are optional. All methods receive a data object as the first parameter and must return a data object. See the example state below.
 
 ```javascript
 {
