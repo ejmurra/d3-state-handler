@@ -107,19 +107,23 @@ const StateHandler = function StateHandler(opts) {
         let xData = Object.assign({},data);
         if (index > -1) {
             try {
-                xData = states[currentIndex].jumpOut(data);
+                xData = states[currentIndex].jumpOut(xData);
             } catch(e) {
                 if (!e.name === 'TypeError') throw new Error(e);
             }
-            //if (!_.isEqual(data,jumpState)) throw new Error('jumpOut function did not match general state spec');
+
+            // Here we should test xData against jumpState
+
             currentIndex = index;
             try {
-                xData = states[currentIndex].jumpIn(data);
+                xData = states[currentIndex].jumpIn(xData);
             } catch(e) {
                 if (!e.name === 'TypeError') throw new Error(e);
             }
-            //if (!_.isEqual(data,jumpState)) throw new Error('jumpIn function did not match general state spec');
-            xData = states[currentIndex].render(data);
+
+            // Again, we should test xData against jumpState
+
+            xData = states[currentIndex].render(xData);
             data = Object.assign({},data,xData);
         } else {
             throw new Error(`State ${name} does not exist`)

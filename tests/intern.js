@@ -38,7 +38,9 @@ define({
 	// <https://theintern.github.io/intern/#option-useLoader> for instruction
 	loaderOptions: {
 		// Packages that should be registered with the loader in each testing environment
-		packages: [ { name: 'd3-state-handler', location: 'dist', main: 'd3-state-handler' } ]
+		packages: [
+			{ name: 'd3-state-handler', location: 'dist', main: 'd3-state-handler' }
+		]
 	},
 
 	// Non-functional test suite(s) to run in each browser
