@@ -1,6 +1,5 @@
 define(['exports', 'module'], function (exports, module) {
-
-    // polyfill object assign
+    // polyfill object assign from MDN
     'use strict';
 
     if (!Object.assign) {

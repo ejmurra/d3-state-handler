@@ -1,6 +1,4 @@
-import _ from 'lodash';
-
-// polyfill object assign
+// polyfill object assign from MDN
 if (!Object.assign) {
     Object.defineProperty(Object, 'assign', {
         enumerable: false,
