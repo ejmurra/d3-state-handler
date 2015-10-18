@@ -95,6 +95,13 @@ States are the building blocks for d3 stories created with d3-state-handler. Sta
     // (Actually, I lied. That's not a safe assumption to make.) 
     // (It will be by version 1.0.0, however.)
     return data;
+  },
+  resize: function(data) {
+    // Do some checks about screen size here and manipulate the state if you
+    // need to. This is called when StateHandler.resize() is called.
+    // StateHandler.resize() defaults to calling render(data) if this
+    // function is unimplemented.
+    return data;
   }
 }
 ```
