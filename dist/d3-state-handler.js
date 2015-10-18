@@ -1,4 +1,5 @@
 define(['exports', 'module'], function (exports, module) {
+
     // polyfill object assign
     'use strict';
 
@@ -35,6 +36,14 @@ define(['exports', 'module'], function (exports, module) {
         });
     }
 
+    // Stolen from http://stackoverflow.com/a/8668283
+    function arrayObjectIndexOf(myArray, searchTerm, property) {
+        for (var i = 0, len = myArray.length; i < len; i++) {
+            if (myArray[i][property] === searchTerm) return i;
+        }
+        return -1;
+    }
+
     // Error handling
     function FinalState(message) {
         "use strict";
@@ -65,6 +74,7 @@ define(['exports', 'module'], function (exports, module) {
             loop: false // specifies whether states should loop from end - beginning and vice versa
         };
         var data = options.data || {};
+        var jumpState = options.jumpState || {};
 
         var currentState = function currentState() {
             Object.assign(states[currentIndex].data, data);
@@ -76,15 +86,15 @@ define(['exports', 'module'], function (exports, module) {
             state.data = Object.assign({}, data);
             state['__index'] = index;
             if (!state.name) state.name = String(index);
-            states.push(state);
+            if (typeof state.render !== 'function') throw new Error('States require a render method');
+            if (typeof state.resize !== 'function') state.resize = state.render;
 
+            states.push(state);
             return _this;
         };
 
         var remove = function remove(name) {
-            var index = states.indexOf(states.filter(function (state) {
-                return state.name === String(name);
-            }));
+            var index = arrayObjectIndexOf(states, name, 'name');
 
             if (index > -1) {
                 array.splice(index, 1);
@@ -93,10 +103,32 @@ define(['exports', 'module'], function (exports, module) {
             return _this;
         };
 
+        var jumpTo = function jumpTo(name) {
+            var index = arrayObjectIndexOf(states, name, 'name');
+            if (index > -1) {
+                try {
+                    currentState().jumpOut.call(data);
+                } catch (e) {
+                    if (!e.name === 'TypeError') throw new Error(e);
+                }
+                //if (!_.isEqual(data,jumpState)) throw new Error('jumpOut function did not match general state spec');
+                currentIndex = index;
+                try {
+                    currentState().jumpIn.call(data);
+                } catch (e) {
+                    if (!e.name === 'TypeError') throw new Error(e);
+                }
+                //if (!_.isEqual(data,jumpState)) throw new Error('jumpIn function did not match general state spec');
+                currentState().render.call(data);
+            } else {
+                throw new Error('State ' + name + ' does not exist');
+            }
+        };
+
         var next = function next() {
             "use strict";
             // Call nextOut on the current state if it exists
-            if (typeof currentState().nextOut === 'function') currentState().nextOut.call(data);
+            if (typeof currentState().nextOut !== 'undefined') currentState().nextOut.call(data);
 
             // Set the current state to the next index. Loop if specified.
             if (currentIndex + 1 < states.length) {
@@ -108,10 +140,10 @@ define(['exports', 'module'], function (exports, module) {
             }
 
             // Call nextIn on the new current state
-            if (typeof currentState().nextIn === 'function') currentState().nextIn.call(data);
+            if (typeof currentState().nextIn !== 'undefined') currentState().nextIn.call(data);
 
-            // Call run on the new current state
-            if (typeof currentState().run === 'function') currentState().run.call(data);
+            // Call render on the new current state
+            if (typeof currentState().render !== 'undefined') currentState().render.call(data);
             return _this;
         };
 
@@ -119,7 +151,7 @@ define(['exports', 'module'], function (exports, module) {
             "use strict";
             // Call prevOut on the current state if it exists
 
-            if (typeof currentState().prevOut === 'function') currentState().prevOut.call(data);
+            if (typeof currentState().prevOut !== 'undefined') currentState().prevOut.call(data);
 
             // Set the current state to the previous index. Loop if specified.
             if (currentIndex - 1 >= 0) {
@@ -131,11 +163,15 @@ define(['exports', 'module'], function (exports, module) {
             }
 
             // Call prevIn on the new current state
-            if (typeof currentState().prevIn === 'function') currentState().prevIn.call(data);
+            if (typeof currentState().prevIn !== 'undefined') currentState().prevIn.call(data);
 
-            // Call run on new current state;
-            if (typeof currentState().run === 'function') currentState().run.call(data);
+            // Call render on new current state;
+            if (typeof currentState().render !== 'undefined') currentState().render.call(data);
             return _this;
+        };
+
+        var resize = function resize() {
+            currentState.resize();
         };
 
         return {
@@ -143,7 +179,9 @@ define(['exports', 'module'], function (exports, module) {
             add: add,
             currentState: currentState,
             prev: prev,
-            remove: remove
+            remove: remove,
+            resize: resize,
+            jumpTo: jumpTo
         };
     };
 

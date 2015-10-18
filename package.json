@@ -1,15 +1,21 @@
 {
   "name": "d3-state-handler",
-  "version": "0.1.2",
+  "version": "0.2.0",
   "description": "A module for managing states allowing users to toggle between d3 charts.",
   "main": "lib/d3-state-handler.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
+  "babel": {
+    "plugins": [
+      "lodash"
+    ]
+  },
   "author": "Eli Murray",
   "license": "MIT",
   "dependencies": {},
   "devDependencies": {
+    "babel-plugin-lodash": "^0.2.0",
     "intern": "^3.0.6"
   }
 }

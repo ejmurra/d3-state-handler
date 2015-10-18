@@ -1,3 +1,5 @@
+import _ from 'lodash';
+
 // polyfill object assign
 if (!Object.assign) {
     Object.defineProperty(Object, 'assign', {
@@ -32,6 +34,14 @@ if (!Object.assign) {
     });
 }
 
+// Stolen from http://stackoverflow.com/a/8668283
+function arrayObjectIndexOf(myArray, searchTerm, property) {
+    for(var i = 0, len = myArray.length; i < len; i++) {
+        if (myArray[i][property] === searchTerm) return i;
+    }
+    return -1;
+}
+
 // Error handling
 function FinalState(message) {
     "use strict";
@@ -59,9 +69,10 @@ const StateHandler = function StateHandler(opts) {
             loop: false // specifies whether states should loop from end - beginning and vice versa
         };
     let data = options.data || {};
+    let jumpState = options.jumpState || {};
 
     let currentState = () => {
-        Object.assign(states[currentIndex].data,data)
+        Object.assign(states[currentIndex].data,data);
         return states[currentIndex];
     };
 
@@ -70,15 +81,15 @@ const StateHandler = function StateHandler(opts) {
         state.data = Object.assign({},data);
         state['__index'] = index;
         if (!state.name) state.name = String(index);
-        states.push(state);
+        if (typeof state.render !== 'function') throw new Error('States require a render method');
+        if (typeof state.resize !== 'function') state.resize = state.render;
 
+        states.push(state);
         return this;
     };
 
     let remove = (name) => {
-        let index = states.indexOf(states.filter(function(state) {
-            return state.name === String(name);
-        }));
+        let index = arrayObjectIndexOf(states,name,'name');
 
         if (index > -1) {
             array.splice(index, 1);
@@ -87,10 +98,32 @@ const StateHandler = function StateHandler(opts) {
         return this;
     };
 
+    let jumpTo = (name) => {
+        let index = arrayObjectIndexOf(states,name,'name');
+        if (index > -1) {
+            try {
+                currentState().jumpOut.call(data);
+            } catch(e) {
+                if (!e.name === 'TypeError') throw new Error(e);
+            }
+            //if (!_.isEqual(data,jumpState)) throw new Error('jumpOut function did not match general state spec');
+            currentIndex = index;
+            try {
+                currentState().jumpIn.call(data);
+            } catch(e) {
+                if (!e.name === 'TypeError') throw new Error(e);
+            }
+            //if (!_.isEqual(data,jumpState)) throw new Error('jumpIn function did not match general state spec');
+            currentState().render.call(data)
+        } else {
+            throw new Error(`State ${name} does not exist`)
+        }
+    };
+
     let next = () => {
         "use strict";
         // Call nextOut on the current state if it exists
-        if (typeof currentState().nextOut === 'function') currentState().nextOut.call(data);
+        if (typeof currentState().nextOut !== 'undefined') currentState().nextOut.call(data);
 
         // Set the current state to the next index. Loop if specified.
         if (currentIndex + 1 < states.length) { currentIndex += 1; }
@@ -98,10 +131,10 @@ const StateHandler = function StateHandler(opts) {
         else { throw new FinalState(); }
 
         // Call nextIn on the new current state
-        if (typeof currentState().nextIn === 'function') currentState().nextIn.call(data);
+        if (typeof currentState().nextIn !== 'undefined') currentState().nextIn.call(data);
 
-        // Call run on the new current state
-        if (typeof currentState().run === 'function') currentState().run.call(data);
+        // Call render on the new current state
+        if (typeof currentState().render !== 'undefined') currentState().render.call(data);
         return this;
     };
 
@@ -109,7 +142,7 @@ const StateHandler = function StateHandler(opts) {
         "use strict";
         // Call prevOut on the current state if it exists
 
-        if (typeof currentState().prevOut === 'function') currentState().prevOut.call(data);
+        if (typeof currentState().prevOut !== 'undefined') currentState().prevOut.call(data);
 
         // Set the current state to the previous index. Loop if specified.
         if (currentIndex - 1 >= 0) { currentIndex -= 1; }
@@ -117,11 +150,15 @@ const StateHandler = function StateHandler(opts) {
         else { throw new FirstState(); }
 
         // Call prevIn on the new current state
-        if (typeof currentState().prevIn === 'function') currentState().prevIn.call(data);
+        if (typeof currentState().prevIn !== 'undefined') currentState().prevIn.call(data);
 
-        // Call run on new current state;
-        if (typeof currentState().run === 'function') currentState().run.call(data);
+        // Call render on new current state;
+        if (typeof currentState().render !== 'undefined') currentState().render.call(data);
         return this;
+    };
+
+    let resize = () => {
+        currentState.resize()
     };
 
     return {
@@ -129,7 +166,9 @@ const StateHandler = function StateHandler(opts) {
         add: add,
         currentState: currentState,
         prev: prev,
-        remove: remove
+        remove: remove,
+        resize: resize,
+        jumpTo: jumpTo
     }
 };
 
