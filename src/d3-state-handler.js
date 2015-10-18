@@ -76,6 +76,11 @@ const StateHandler = function StateHandler(opts) {
         return states[currentIndex];
     };
 
+    let start = () => {
+        states[currentIndex].data = states[currentIndex].render.call(data);
+        Object.assign(data, states[currentIndex].data);
+    };
+
     let add = (state) => {
         let index = states.length;
         state.data = Object.assign({},data);
@@ -123,18 +128,23 @@ const StateHandler = function StateHandler(opts) {
     let next = () => {
         "use strict";
         // Call nextOut on the current state if it exists
-        if (typeof currentState().nextOut !== 'undefined') currentState().nextOut.call(data);
+        if (typeof states[currentIndex].nextOut !== 'undefined') data = Object.assign({},states[currentIndex].nextOut.call(data));
 
         // Set the current state to the next index. Loop if specified.
-        if (currentIndex + 1 < states.length) { currentIndex += 1; }
-        else if (options.loop) { currentIndex = 0; }
-        else { throw new FinalState(); }
+        if (currentIndex + 1 < states.length) {
+            currentIndex += 1;
+        } else if (options.loop) {
+            currentIndex = 0;
+        } else {
+            throw new FinalState();
+        }
 
         // Call nextIn on the new current state
-        if (typeof currentState().nextIn !== 'undefined') currentState().nextIn.call(data);
+        if (typeof states[currentIndex].nextIn !== 'undefined') data = Object.assign({},states[currentIndex].nextIn.call(data));
 
         // Call render on the new current state
-        if (typeof currentState().render !== 'undefined') currentState().render.call(data);
+        if (typeof states[currentIndex].render !== 'undefined') data = Object.assign({},states[currentIndex].render.call(data));
+        states[currentIndex].data = data;
         return this;
     };
 
@@ -142,18 +152,23 @@ const StateHandler = function StateHandler(opts) {
         "use strict";
         // Call prevOut on the current state if it exists
 
-        if (typeof currentState().prevOut !== 'undefined') currentState().prevOut.call(data);
+        if (typeof states[currentIndex].prevOut !== 'undefined') data = Object.assign({},states[currentIndex].prevOut.call(data));
 
         // Set the current state to the previous index. Loop if specified.
-        if (currentIndex - 1 >= 0) { currentIndex -= 1; }
-        else if (options.loop) { currentIndex = states.length; }
-        else { throw new FirstState(); }
+        if (currentIndex - 1 >= 0) {
+            currentIndex -= 1;
+        } else if (options.loop) {
+            currentIndex = states.length - 1;
+        } else {
+            throw new FirstState();
+        }
 
         // Call prevIn on the new current state
-        if (typeof currentState().prevIn !== 'undefined') currentState().prevIn.call(data);
+        if (typeof states[currentIndex].prevIn !== 'undefined') data = Object.assign({},states[currentIndex].prevIn.call(data));
 
         // Call render on new current state;
-        if (typeof currentState().render !== 'undefined') currentState().render.call(data);
+        if (typeof states[currentIndex].render !== 'undefined') data = Object.assign({},states[currentIndex].render.call(data));
+        states[currentIndex].data = data;
         return this;
     };
 
@@ -168,7 +183,8 @@ const StateHandler = function StateHandler(opts) {
         prev: prev,
         remove: remove,
         resize: resize,
-        jumpTo: jumpTo
+        jumpTo: jumpTo,
+        start: start
     }
 };
 
