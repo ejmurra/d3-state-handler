@@ -5,7 +5,7 @@
   "main": "lib/d3-state-handler.js",
   "scripts": {
     "test": "node ./node_modules/intern/bin/intern-client config=tests/intern",
-    "prepublish": "node ./node-modules/intern/bin/intern-client config=tests/intern"
+    "prepublish": "node ./node_modules/intern/bin/intern-client config=tests/intern"
   },
   "babel": {
     "plugins": [
