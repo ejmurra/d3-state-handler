@@ -1,7 +1,6 @@
 var gulp = require('gulp');
 var sourcemaps = require('gulp-sourcemaps');
 var babel = require('gulp-babel');
-var rjs = require('gulp-requirejs-optimize');
 var uglify = require('gulp-uglify');
 var rename = require('gulp-rename');
 
@@ -22,7 +21,6 @@ gulp.task('rjs', function() {
     requirejs.optimize({
         'optimize': 'none',
         'out': 'dist/d3-state-handler.js',
-        'wrap': true,
         'baseUrl': './tests/compiled/',
         'name': 'd3-state-handler',
         'onModuleBundleComplete': function(data) {
@@ -30,7 +28,8 @@ gulp.task('rjs', function() {
             var fs = require('fs');
             var amdclean = require('amdclean');
             fs.writeFileSync(f, amdclean.clean({
-                'filePath': f
+                'filePath': f,
+                'wrap': true
             }))
         }
     });
@@ -51,4 +50,4 @@ gulp.task('watch', function() {
     gulp.watch('dist/d3-state-handler.js',['minify']);
 });
 
-gulp.task('default',['watch']);
+gulp.task('default',['babel','rjs','minify','watch']);

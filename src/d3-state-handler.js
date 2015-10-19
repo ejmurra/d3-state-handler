@@ -1,5 +1,3 @@
-import 'urlHandler';
-
 // polyfill object assign from MDN
 if (!Object.assign) {
     Object.defineProperty(Object, 'assign', {
@@ -42,140 +40,185 @@ function arrayObjectIndexOf(myArray, searchTerm, property) {
     return -1;
 }
 
-// Error handling
-function FinalState(message) {
-    "use strict";
-    this.name = 'FinalStateError';
-    this.message = message || "There are no more states to advance to";
-    this.stack = (new Error()).stack;
-}
-FinalState.prototype = Object.create(Error.prototype);
-FinalState.prototype.constructor = FinalState;
+const StateHandler = function StateHandler(Window,opts) {
 
-function FirstState(message) {
-    "use strict";
-    this.name = 'FirstStateError';
-    this.message = message || "There are no states before this one";
-    this.stack = (new Error()).stack;
-}
-FirstState.prototype = Object.create(Error.prototype);
-FirstState.prototype.constructor = FirstState;
+    /*
+     * Private vars
+     */
 
-const StateHandler = function StateHandler(opts) {
-    "use strict";
+    // Used to hold states and keep track of which state the user is currently interacting with
     let currentIndex = 0;
     let states = [];
+
+    // This function just lets data flow through it unmutated. Used as a filler for missing methods on state objects
+    const substitute = function(data) {return data};
+
     let options = opts || {
-            loop: false // specifies whether states should loop from end - beginning and vice versa
+            loop: false,        // Whether last state should hook into first state and vice versa
+            init: substitute,   // Function to run before calling the first state
+            jumpState: {},      // Contract states must adhere to when returning from jumpOut
+            data: {},           // Object passed between states. Every method on a state receives and returns a data object
+            load: substitute    // Function to be called when a user loads a non-first state from a URL. This function
+                                    // receives data as a parameter and should return an object that is equal to jumpState.
         };
-    let data = options.data || {};
-    let jumpState = options.jumpState || {};
+
+    // For easy reference and so that const is enforced by babel
+    const jumpState = options.jumpState;
+
+    // For easy reference
+    let data = options.data;
+
+    // When states register, their methods are stored in here so that they are simpler and can be added to html pushState
+    let methodRegister = {};
+
+    /*
+     * Private Methods
+     */
+    let registerState = (state) => {
+
+        let avail = !methodRegister[state.name];
+        if (!avail) throw new Error(`State ${state.name} already exists!`);
+
+        methodRegister[state.name] = {
+            render: state.render,
+            fromNext: state.fromNext || substitute,
+            fromPrev: state.fromPrev || substitute,
+            toNext: state.toNext || substitute,
+            toPrev: state.toPrev || substitute,
+            jumpOut: state.jumpOut || substitute,
+            jumpIn: state.jumpIn || substitute,
+            resize: state.resize || state.render
+        };
+
+        if (states.length) states[states.length - 1].next = state.name;
+
+        state = {
+            prev: states.length ? states[states.length - 1].name: null,
+            name: state.name,
+            next: null,
+            url: `#${this.name}`
+        };
+
+        states.push(state);
+
+        return state;
+    };
+
+    /*
+     * Public Methods
+     */
+
+    let add = (state) => {
+        state.name = state.name || String(states.length);
+        state = registerState(state);
+        if (states.length === 1) Window.history.pushState(state,state.name,`#${state.name}`)
+    };
 
     let currentState = () => {
         return states[currentIndex];
     };
 
-    let start = () => {
+    let start = (fn) => {
         let xData = Object.assign({},data);
-        xData = states[currentIndex].render(xData);
+        xData = !fn ? options.init(xData) : fn(xData);
+        xData = states[0].render(xData);
         data = Object.assign({},data,xData);
-    };
-
-    let add = (state) => {
-        let index = states.length;
-        state['__index'] = index;
-        if (!state.name) state.name = String(index);
-        if (typeof state.render !== 'function') throw new Error('States require a render method');
-        if (typeof state.resize !== 'function') state.resize = state.render;
-
-        states.push(state);
-        return this;
     };
 
     let remove = (name) => {
         let index = arrayObjectIndexOf(states,name,'name');
-
-        if (index > -1) {
-            array.splice(index, 1);
-        }
-
-        return this;
+        if (index > -1) array.splice(index, 1);
     };
 
-    let jumpTo = (name) => {
+    let loadState = (name) => {
         let index = arrayObjectIndexOf(states,name,'name');
-        let xData = Object.assign({},data);
+        let targetState = states[index];
+
         if (index > -1) {
-            try {
-                xData = states[currentIndex].jumpOut(xData);
-            } catch(e) {
-                if (!e.name === 'TypeError') throw new Error(e);
-            }
+            let xData = options.load(Object.assign({},data));
 
-            // Here we should test xData against jumpState
+            // TODO: check xData against jumpState
 
-            currentIndex = index;
-            try {
-                xData = states[currentIndex].jumpIn(xData);
-            } catch(e) {
-                if (!e.name === 'TypeError') throw new Error(e);
-            }
+            // Call transition methods
+            xData = methodRegister[targetState.name].jumpIn(Object.assign({},jumpState));
+            xData = methodRegister[targetState.name].render(xData);
 
-            // Again, we should test xData against jumpState
-
-            xData = states[currentIndex].render(xData);
+            // Clean up
             data = Object.assign({},data,xData);
+            currentIndex = index;
+            Window.history.pushState(targetState,targetState.name,`#${targetState.name}`)
         } else {
             throw new Error(`State ${name} does not exist`)
         }
     };
 
-    let next = () => {
-        "use strict";
-        let xData = Object.assign({},data);
-        // Call nextOut on the current state if it exists
-        if (typeof states[currentIndex].nextOut !== 'undefined') xData = Object.assign({},states[currentIndex].nextOut(xData));
+    let jumpTo = (name) => {
+        let index = arrayObjectIndexOf(states,name,'name');
+        let currentState = states[currentIndex];
+        let targetState = states[index];
 
-        // Set the current state to the next index. Loop if specified.
-        if (currentIndex + 1 < states.length) {
-            currentIndex += 1;
-        } else if (options.loop) {
-            currentIndex = 0;
+        if (index > -1) {
+            let xData = Object.assign({},data);
+            xData = methodRegister[currentState.name].jumpOut(xData);
+
+            // TODO: check xData against jumpState
+
+
+            // Call transition methods
+            xData = methodRegister[targetState.name].jumpIn(Object.assign({},jumpState));
+            xData = methodRegister[targetState.name].render(xData);
+
+            // Clean up
+            data = Object.assign({},data,xData);
+            currentIndex = index;
+            Window.history.pushState(targetState,targetState.name,`#${targetState.name}`)
         } else {
-            throw new FinalState();
+            throw new Error(`State ${name} does not exist`);
         }
+    };
 
-        // Call nextIn on the new current state
-        if (typeof states[currentIndex].nextIn !== 'undefined') xData = Object.assign({},states[currentIndex].nextIn(xData));
+    let next = () => {
+        let thisState = states[currentIndex];
+        let nextStateName = thisState.next;
 
-        // Call render on the new current state
-        if (typeof states[currentIndex].render !== 'undefined') xData = Object.assign({},states[currentIndex].render(xData));
-        data = Object.assign({},data,xData);
-        return this;
+        if (nextStateName) {
+            let nextState = states[arrayObjectIndexOf(states,nextStateName,'name')];
+            let xData = Object.assign({},data);
+
+            // Call transition methods
+            xData = methodRegister[thisState.name].toNext(xData);
+            xData = methodRegister[nextState.name].fromPrev(xData);
+            xData = methodRegister[nextState.name].render(xData);
+
+            // Clean up
+            data = Object.assign({},data,xData);
+            currentIndex = (currentIndex + 1 < states.length) ? currentIndex + 1 : 0;
+            Window.history.pushState(nextState,nextState.name,`#${nextState.name}`);
+        } else {
+            throw new Error(`No state after current state (${JSON.stringify(thisState)})`)
+        }
     };
 
     let prev = () => {
-        "use strict";
-        let xData = Object.assign({},data);
-        // Call prevOut on the current state if it exists
-        if (typeof states[currentIndex].prevOut !== 'undefined') xData = Object.assign({},states[currentIndex].prevOut(xData));
+        let thisState = states[currentIndex];
+        let prevStateName = thisState.prev;
 
-        // Set the current state to the previous index. Loop if specified.
-        if (currentIndex - 1 >= 0) {
-            currentIndex -= 1;
-        } else if (options.loop) {
-            currentIndex = states.length - 1;
+        if (prevStateName) {
+            let prevState = states[arrayObjectIndexOf(states,prevStateName,'name')];
+            let xData = Object.assign({},data);
+
+            // Cal transition methods
+            xData = methodRegister[thisState.name].toPrev(xData);
+            xData = methodRegister[prevState.name].fromNext(xData);
+            xData = methodRegister[prevState.name].render(xData);
+
+            // Clean up
+            data = Object.assign({},data,xData);
+            currentIndex = (currentIndex - 1 >= 0) ? currentIndex - 1 : states.length - 1;
+            Window.history.pushState(prevState,prevState.name,'name');
         } else {
-            throw new FirstState();
+            throw new Error(`No state before current state (${JSON.stringify(thisState)})`)
         }
-
-        // Call prevIn on the new current state
-        if (typeof states[currentIndex].prevIn !== 'undefined') xData = Object.assign({},states[currentIndex].prevIn(xData));
-
-        // Call render on new current state;
-        if (typeof states[currentIndex].render !== 'undefined') xData = Object.assign({},states[currentIndex].render(xData));
-        data = Object.assign({},data,xData);
-        return this;
     };
 
     let resize = () => {
@@ -184,16 +227,19 @@ const StateHandler = function StateHandler(opts) {
         data = Object.assign({},data,xData);
     };
 
-    return {
+    let api = {
         next: next,
         add: add,
         currentState: currentState,
         prev: prev,
         remove: remove,
         resize: resize,
+        load: loadState,
         jumpTo: jumpTo,
         start: start
-    }
+    };
+
+    return api;
 };
 
 export default StateHandler;

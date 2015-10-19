@@ -1,197 +1,214 @@
-;(function() {
-var urlHandler = {}, d3_state_handler = {};
-(function () {
-  urlHandler = function (exports) {
-    var UrlHandler = function UrlHandler() {
-      'use strict';
-      return 10;
-    };
-    exports = UrlHandler;
-    return exports;
-  }(urlHandler);
-  d3_state_handler = function (exports, _urlHandler) {
-    // polyfill object assign from MDN
-    if (!Object.assign) {
-      Object.defineProperty(Object, 'assign', {
-        enumerable: false,
-        configurable: true,
-        writable: true,
-        value: function value(target) {
-          'use strict';
-          if (target === undefined || target === null) {
-            throw new TypeError('Cannot convert first argument to object');
-          }
-          var to = Object(target);
-          for (var i = 1; i < arguments.length; i++) {
-            var nextSource = arguments[i];
-            if (nextSource === undefined || nextSource === null) {
-              continue;
-            }
-            nextSource = Object(nextSource);
-            var keysArray = Object.keys(nextSource);
-            for (var nextIndex = 0, len = keysArray.length; nextIndex < len; nextIndex++) {
-              var nextKey = keysArray[nextIndex];
-              var desc = Object.getOwnPropertyDescriptor(nextSource, nextKey);
-              if (desc !== undefined && desc.enumerable) {
-                to[nextKey] = nextSource[nextKey];
-              }
-            }
-          }
-          return to;
+var d3_state_handler = {};
+d3_state_handler = function (exports) {
+  if (!Object.assign) {
+    Object.defineProperty(Object, 'assign', {
+      enumerable: false,
+      configurable: true,
+      writable: true,
+      value: function value(target) {
+        'use strict';
+        if (target === undefined || target === null) {
+          throw new TypeError('Cannot convert first argument to object');
         }
-      });
-    }
-    // Stolen from http://stackoverflow.com/a/8668283
-    function arrayObjectIndexOf(myArray, searchTerm, property) {
-      for (var i = 0, len = myArray.length; i < len; i++) {
-        if (myArray[i][property] === searchTerm)
-          return i;
+        var to = Object(target);
+        for (var i = 1; i < arguments.length; i++) {
+          var nextSource = arguments[i];
+          if (nextSource === undefined || nextSource === null) {
+            continue;
+          }
+          nextSource = Object(nextSource);
+          var keysArray = Object.keys(nextSource);
+          for (var nextIndex = 0, len = keysArray.length; nextIndex < len; nextIndex++) {
+            var nextKey = keysArray[nextIndex];
+            var desc = Object.getOwnPropertyDescriptor(nextSource, nextKey);
+            if (desc !== undefined && desc.enumerable) {
+              to[nextKey] = nextSource[nextKey];
+            }
+          }
+        }
+        return to;
       }
-      return -1;
+    });
+  }
+  // Stolen from http://stackoverflow.com/a/8668283
+  function arrayObjectIndexOf(myArray, searchTerm, property) {
+    for (var i = 0, len = myArray.length; i < len; i++) {
+      if (myArray[i][property] === searchTerm)
+        return i;
     }
-    // Error handling
-    function FinalState(message) {
-      'use strict';
-      this.name = 'FinalStateError';
-      this.message = message || 'There are no more states to advance to';
-      this.stack = new Error().stack;
-    }
-    FinalState.prototype = Object.create(Error.prototype);
-    FinalState.prototype.constructor = FinalState;
-    function FirstState(message) {
-      'use strict';
-      this.name = 'FirstStateError';
-      this.message = message || 'There are no states before this one';
-      this.stack = new Error().stack;
-    }
-    FirstState.prototype = Object.create(Error.prototype);
-    FirstState.prototype.constructor = FirstState;
-    var StateHandler = function StateHandler(opts) {
-      'use strict';
-      var _this = this;
-      var currentIndex = 0;
-      var states = [];
-      var options = opts || {
-        loop: false  // specifies whether states should loop from end - beginning and vice versa
-      };
-      var data = options.data || {};
-      var jumpState = options.jumpState || {};
-      var currentState = function currentState() {
-        return states[currentIndex];
-      };
-      var start = function start() {
-        var xData = Object.assign({}, data);
-        xData = states[currentIndex].render(xData);
-        data = Object.assign({}, data, xData);
-      };
-      var add = function add(state) {
-        var index = states.length;
-        state['__index'] = index;
-        if (!state.name)
-          state.name = String(index);
-        if (typeof state.render !== 'function')
-          throw new Error('States require a render method');
-        if (typeof state.resize !== 'function')
-          state.resize = state.render;
-        states.push(state);
-        return _this;
-      };
-      var remove = function remove(name) {
-        var index = arrayObjectIndexOf(states, name, 'name');
-        if (index > -1) {
-          array.splice(index, 1);
-        }
-        return _this;
-      };
-      var jumpTo = function jumpTo(name) {
-        var index = arrayObjectIndexOf(states, name, 'name');
-        var xData = Object.assign({}, data);
-        if (index > -1) {
-          try {
-            xData = states[currentIndex].jumpOut(xData);
-          } catch (e) {
-            if (!e.name === 'TypeError')
-              throw new Error(e);
-          }
-          // Here we should test xData against jumpState
-          currentIndex = index;
-          try {
-            xData = states[currentIndex].jumpIn(xData);
-          } catch (e) {
-            if (!e.name === 'TypeError')
-              throw new Error(e);
-          }
-          // Again, we should test xData against jumpState
-          xData = states[currentIndex].render(xData);
-          data = Object.assign({}, data, xData);
-        } else {
-          throw new Error('State ' + name + ' does not exist');
-        }
-      };
-      var next = function next() {
-        'use strict';
-        var xData = Object.assign({}, data);
-        // Call nextOut on the current state if it exists
-        if (typeof states[currentIndex].nextOut !== 'undefined')
-          xData = Object.assign({}, states[currentIndex].nextOut(xData));
-        // Set the current state to the next index. Loop if specified.
-        if (currentIndex + 1 < states.length) {
-          currentIndex += 1;
-        } else if (options.loop) {
-          currentIndex = 0;
-        } else {
-          throw new FinalState();
-        }
-        // Call nextIn on the new current state
-        if (typeof states[currentIndex].nextIn !== 'undefined')
-          xData = Object.assign({}, states[currentIndex].nextIn(xData));
-        // Call render on the new current state
-        if (typeof states[currentIndex].render !== 'undefined')
-          xData = Object.assign({}, states[currentIndex].render(xData));
-        data = Object.assign({}, data, xData);
-        return _this;
-      };
-      var prev = function prev() {
-        'use strict';
-        var xData = Object.assign({}, data);
-        // Call prevOut on the current state if it exists
-        if (typeof states[currentIndex].prevOut !== 'undefined')
-          xData = Object.assign({}, states[currentIndex].prevOut(xData));
-        // Set the current state to the previous index. Loop if specified.
-        if (currentIndex - 1 >= 0) {
-          currentIndex -= 1;
-        } else if (options.loop) {
-          currentIndex = states.length - 1;
-        } else {
-          throw new FirstState();
-        }
-        // Call prevIn on the new current state
-        if (typeof states[currentIndex].prevIn !== 'undefined')
-          xData = Object.assign({}, states[currentIndex].prevIn(xData));
-        // Call render on new current state;
-        if (typeof states[currentIndex].render !== 'undefined')
-          xData = Object.assign({}, states[currentIndex].render(xData));
-        data = Object.assign({}, data, xData);
-        return _this;
-      };
-      var resize = function resize() {
-        var xData = Object.assign({}, data);
-        xData = states[currentIndex].resize(xData);
-        data = Object.assign({}, data, xData);
-      };
-      return {
-        next: next,
-        add: add,
-        currentState: currentState,
-        prev: prev,
-        remove: remove,
-        resize: resize,
-        jumpTo: jumpTo,
-        start: start
-      };
+    return -1;
+  }
+  var StateHandler = function StateHandler(Window, opts) {
+    var _this = this;
+    /*
+     * Private vars
+     */
+    // Used to hold states and keep track of which state the user is currently interacting with
+    var currentIndex = 0;
+    var states = [];
+    // This function just lets data flow through it unmutated. Used as a filler for missing methods on state objects
+    var substitute = function substitute(data) {
+      return data;
     };
-    exports = StateHandler;
-    return exports;
-  }(d3_state_handler, urlHandler);
-}());
-}());
+    var options = opts || {
+      loop: false,
+      // Whether last state should hook into first state and vice versa
+      init: substitute,
+      // Function to run before calling the first state
+      jumpState: {},
+      // Contract states must adhere to when returning from jumpOut
+      data: {},
+      // Object passed between states. Every method on a state receives and returns a data object
+      load: substitute  // Function to be called when a user loads a non-first state from a URL. This function
+                  // receives data as a parameter and should return an object that is equal to jumpState.
+    };
+    // For easy reference and so that const is enforced by babel
+    var jumpState = options.jumpState;
+    // For easy reference
+    var data = options.data;
+    // When states register, their methods are stored in here so that they are simpler and can be added to html pushState
+    var methodRegister = {};
+    /*
+     * Private Methods
+     */
+    var registerState = function registerState(state) {
+      var avail = !methodRegister[state.name];
+      if (!avail)
+        throw new Error('State ' + state.name + ' already exists!');
+      methodRegister[state.name] = {
+        render: state.render,
+        fromNext: state.fromNext || substitute,
+        fromPrev: state.fromPrev || substitute,
+        toNext: state.toNext || substitute,
+        toPrev: state.toPrev || substitute,
+        jumpOut: state.jumpOut || substitute,
+        jumpIn: state.jumpIn || substitute,
+        resize: state.resize || state.render
+      };
+      if (states.length)
+        states[states.length - 1].next = state.name;
+      state = {
+        prev: states.length ? states[states.length - 1].name : null,
+        name: state.name,
+        next: null,
+        url: '#' + _this.name
+      };
+      states.push(state);
+      return state;
+    };
+    /*
+     * Public Methods
+     */
+    var add = function add(state) {
+      state.name = state.name || String(states.length);
+      state = registerState(state);
+      if (states.length === 1)
+        Window.history.pushState(state, state.name, '#' + state.name);
+    };
+    var currentState = function currentState() {
+      return states[currentIndex];
+    };
+    var start = function start(fn) {
+      var xData = Object.assign({}, data);
+      xData = !fn ? options.init(xData) : fn(xData);
+      xData = states[0].render(xData);
+      data = Object.assign({}, data, xData);
+    };
+    var remove = function remove(name) {
+      var index = arrayObjectIndexOf(states, name, 'name');
+      if (index > -1)
+        array.splice(index, 1);
+    };
+    var loadState = function loadState(name) {
+      var index = arrayObjectIndexOf(states, name, 'name');
+      var targetState = states[index];
+      if (index > -1) {
+        var xData = options.load(Object.assign({}, data));
+        // TODO: check xData against jumpState
+        // Call transition methods
+        xData = methodRegister[targetState.name].jumpIn(Object.assign({}, jumpState));
+        xData = methodRegister[targetState.name].render(xData);
+        // Clean up
+        data = Object.assign({}, data, xData);
+        currentIndex = index;
+        Window.history.pushState(targetState, targetState.name, '#' + targetState.name);
+      } else {
+        throw new Error('State ' + name + ' does not exist');
+      }
+    };
+    var jumpTo = function jumpTo(name) {
+      var index = arrayObjectIndexOf(states, name, 'name');
+      var currentState = states[currentIndex];
+      var targetState = states[index];
+      if (index > -1) {
+        var xData = Object.assign({}, data);
+        xData = methodRegister[currentState.name].jumpOut(xData);
+        // TODO: check xData against jumpState
+        // Call transition methods
+        xData = methodRegister[targetState.name].jumpIn(Object.assign({}, jumpState));
+        xData = methodRegister[targetState.name].render(xData);
+        // Clean up
+        data = Object.assign({}, data, xData);
+        currentIndex = index;
+        Window.history.pushState(targetState, targetState.name, '#' + targetState.name);
+      } else {
+        throw new Error('State ' + name + ' does not exist');
+      }
+    };
+    var next = function next() {
+      var thisState = states[currentIndex];
+      var nextStateName = thisState.next;
+      if (nextStateName) {
+        var nextState = states[arrayObjectIndexOf(states, nextStateName, 'name')];
+        var xData = Object.assign({}, data);
+        // Call transition methods
+        xData = methodRegister[thisState.name].toNext(xData);
+        xData = methodRegister[nextState.name].fromPrev(xData);
+        xData = methodRegister[nextState.name].render(xData);
+        // Clean up
+        data = Object.assign({}, data, xData);
+        currentIndex = currentIndex + 1 < states.length ? currentIndex + 1 : 0;
+        Window.history.pushState(nextState, nextState.name, '#' + nextState.name);
+      } else {
+        throw new Error('No state after current state (' + JSON.stringify(thisState) + ')');
+      }
+    };
+    var prev = function prev() {
+      var thisState = states[currentIndex];
+      var prevStateName = thisState.prev;
+      if (prevStateName) {
+        var prevState = states[arrayObjectIndexOf(states, prevStateName, 'name')];
+        var xData = Object.assign({}, data);
+        // Cal transition methods
+        xData = methodRegister[thisState.name].toPrev(xData);
+        xData = methodRegister[prevState.name].fromNext(xData);
+        xData = methodRegister[prevState.name].render(xData);
+        // Clean up
+        data = Object.assign({}, data, xData);
+        currentIndex = currentIndex - 1 >= 0 ? currentIndex - 1 : states.length - 1;
+        Window.history.pushState(prevState, prevState.name, 'name');
+      } else {
+        throw new Error('No state before current state (' + JSON.stringify(thisState) + ')');
+      }
+    };
+    var resize = function resize() {
+      var xData = Object.assign({}, data);
+      xData = states[currentIndex].resize(xData);
+      data = Object.assign({}, data, xData);
+    };
+    var api = {
+      next: next,
+      add: add,
+      currentState: currentState,
+      prev: prev,
+      remove: remove,
+      resize: resize,
+      load: loadState,
+      jumpTo: jumpTo,
+      start: start
+    };
+    return api;
+  };
+  exports = StateHandler;
+  return exports;
+}(d3_state_handler);
