@@ -9,7 +9,7 @@ d3-state-handler won't make charts for you, nor will it tell you how to display 
 d3-state-handler can be installed with npm. `npm install --save d3-state-handler`
 
 ### Usage
-d3-state-handler is an amd module. To use it, you'll need [requirejs](https://github.com/jrburke/requirejs). Check out [d3-state-demo](https://github.com/ejmurra/d3-state-demo/tree/state-seed) for a configuration example.
+d3-state-handler is _no longer_ an amd module. ~~To use it, you'll need [requirejs](https://github.com/jrburke/requirejs).~~ But you can still use requirejs if you want to.
 
 ## API
 
