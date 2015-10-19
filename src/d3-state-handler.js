@@ -1,3 +1,5 @@
+import 'urlHandler';
+
 // polyfill object assign from MDN
 if (!Object.assign) {
     Object.defineProperty(Object, 'assign', {
