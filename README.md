@@ -5,6 +5,12 @@ A thin data-layer for creating kick-ass d3 stories.
 ### How does it work?
 d3-state-handler won't make charts for you, nor will it tell you how to display them. Instead, it allows you to register different states (read charts) and call hooks as you transfer between states. This allows you to act on your data between charts making it easy to transition between them. It also supports hooks for jumping to specific charts via urls. For a demonstration, see [the demo](http://github.com/ejmurra/d3-state-demo).
 
+### Installation
+d3-state-handler can be installed with npm. `npm install --save d3-state-handler`
+
+### Usage
+d3-state-handler is an amd module. To use it, you'll need [requirejs](https://github.com/jrburke/requirejs). Check out [d3-state-demo](https://github.com/ejmurra/d3-state-demo/tree/state-seed) for a configuration example.
+
 ## API
 
 ### constructor(options)
