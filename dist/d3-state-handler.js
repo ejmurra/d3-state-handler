@@ -39,7 +39,6 @@ d3_state_handler = function (exports) {
     return -1;
   }
   var StateHandler = function StateHandler(Window, opts) {
-    var _this = this;
     /*
      * Private vars
      */
@@ -91,7 +90,7 @@ d3_state_handler = function (exports) {
         prev: states.length ? states[states.length - 1].name : null,
         name: state.name,
         next: null,
-        url: '#' + _this.name
+        url: '#' + state.name
       };
       states.push(state);
       return state;
@@ -198,10 +197,10 @@ d3_state_handler = function (exports) {
           xData = !fn ? options.init(xData) : fn(xData);
           xData = methodRegister[states[0].name].render(xData);
           data = Object.assign({}, data, xData);
-          Window.history.pushState(state[0], state[0].name, '#' + state[0].name);
+          Window.history.pushState(states[0], states[0].name, '#' + states[0].name);
         } else {
           var index = arrayObjectIndexOf(states, Window.location.hash.slice(1), 'name');
-          Window.history.pushState(state[index], state[index].name, '#' + state[index].name);
+          Window.history.pushState(states[index], states[index].name, '#' + states[index].name);
           jumpTo(Window.location.hash.slice(1));
         }
       });
@@ -214,10 +213,10 @@ d3_state_handler = function (exports) {
         xData = !fn ? options.init(xData) : fn(xData);
         xData = methodRegister[states[0].name].render(xData);
         data = Object.assign({}, data, xData);
-        Window.history.pushState(state[0], state[0].name, '#' + state[0].name);
+        Window.history.pushState(states[0], states[0].name, '#' + states[0].name);
       } else {
         var index = arrayObjectIndexOf(states, Window.location.hash.slice(1), 'name');
-        Window.history.pushState(state[index], state[index].name, '#' + state[index].name);
+        Window.history.pushState(states[index], states[index].name, '#' + states[index].name);
         jumpTo(Window.location.hash.slice(1));
       }
     };

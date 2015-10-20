@@ -96,7 +96,7 @@ const StateHandler = function StateHandler(Window,opts) {
             prev: states.length ? states[states.length - 1].name: null,
             name: state.name,
             next: null,
-            url: `#${this.name}`
+            url: `#${state.name}` // Redundant for now but saving for possible use later
         };
 
         states.push(state);
@@ -228,10 +228,10 @@ const StateHandler = function StateHandler(Window,opts) {
                 xData = !fn ? options.init(xData) : fn(xData);
                 xData = methodRegister[states[0].name].render(xData);
                 data = Object.assign({},data,xData);
-                Window.history.pushState(state[0], state[0].name,`#${state[0].name}`);
+                Window.history.pushState(states[0], states[0].name,`#${states[0].name}`);
             } else {
                 let index = arrayObjectIndexOf(states,Window.location.hash.slice(1),'name');
-                Window.history.pushState(state[index], state[index].name,`#${state[index].name}`);
+                Window.history.pushState(states[index], states[index].name,`#${states[index].name}`);
                 jumpTo(Window.location.hash.slice(1));
             }
         });
@@ -245,10 +245,10 @@ const StateHandler = function StateHandler(Window,opts) {
             xData = !fn ? options.init(xData) : fn(xData);
             xData = methodRegister[states[0].name].render(xData);
             data = Object.assign({},data,xData);
-            Window.history.pushState(state[0], state[0].name,`#${state[0].name}`);
+            Window.history.pushState(states[0], states[0].name,`#${states[0].name}`);
         } else {
             let index = arrayObjectIndexOf(states,Window.location.hash.slice(1),'name');
-            Window.history.pushState(state[index], state[index].name,`#${state[index].name}`);
+            Window.history.pushState(states[index], states[index].name,`#${states[index].name}`);
             jumpTo(Window.location.hash.slice(1));
         }
 
