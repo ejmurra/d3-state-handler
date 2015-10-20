@@ -214,7 +214,7 @@ const StateHandler = function StateHandler(Window,opts) {
             // Clean up
             data = Object.assign({},data,xData);
             currentIndex = (currentIndex - 1 >= 0) ? currentIndex - 1 : states.length - 1;
-            Window.history.pushState(prevState,prevState.name,'name');
+            Window.history.pushState(prevState,prevState.name,`#${prevState.name}`);
         } else {
             throw new Error(`No state before current state (${JSON.stringify(thisState)})`)
         }
@@ -228,8 +228,11 @@ const StateHandler = function StateHandler(Window,opts) {
                 xData = !fn ? options.init(xData) : fn(xData);
                 xData = methodRegister[states[0].name].render(xData);
                 data = Object.assign({},data,xData);
+                Window.history.pushState(state[0], state[0].name,`#${state[0].name}`);
             } else {
-                jumpTo(Window.history.state.name);
+                let index = arrayObjectIndexOf(states,Window.location.hash.slice(1),'name');
+                Window.history.pushState(state[index], state[index].name,`#${state[index].name}`);
+                jumpTo(Window.location.hash.slice(1));
             }
         });
         Window.addEventListener('resize',(e) => {
@@ -242,8 +245,11 @@ const StateHandler = function StateHandler(Window,opts) {
             xData = !fn ? options.init(xData) : fn(xData);
             xData = methodRegister[states[0].name].render(xData);
             data = Object.assign({},data,xData);
+            Window.history.pushState(state[0], state[0].name,`#${state[0].name}`);
         } else {
-            jumpTo(Window.history.state.name);
+            let index = arrayObjectIndexOf(states,Window.location.hash.slice(1),'name');
+            Window.history.pushState(state[index], state[index].name,`#${state[index].name}`);
+            jumpTo(Window.location.hash.slice(1));
         }
 
 
