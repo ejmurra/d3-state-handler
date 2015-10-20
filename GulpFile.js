@@ -50,4 +50,6 @@ gulp.task('watch', function() {
     gulp.watch('dist/d3-state-handler.js',['minify']);
 });
 
+gulp.task('publish', ['babel','rjs','minify']);
+
 gulp.task('default',['babel','rjs','minify','watch']);

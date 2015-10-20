@@ -98,7 +98,7 @@ d3_state_handler = function (exports) {
     };
     var resize = function resize() {
       var xData = Object.assign({}, data);
-      xData = states[currentIndex].resize(xData);
+      xData = methodRegister[states[currentIndex].name].resize(xData);
       data = Object.assign({}, data, xData);
     };
     /*
@@ -185,7 +185,7 @@ d3_state_handler = function (exports) {
         // Clean up
         data = Object.assign({}, data, xData);
         currentIndex = currentIndex - 1 >= 0 ? currentIndex - 1 : states.length - 1;
-        Window.history.pushState(prevState, prevState.name, 'name');
+        Window.history.pushState(prevState, prevState.name, '#' + prevState.name);
       } else {
         throw new Error('No state before current state (' + JSON.stringify(thisState) + ')');
       }
@@ -193,13 +193,16 @@ d3_state_handler = function (exports) {
     var start = function start(fn) {
       // Set up listeners for popState and resize
       Window.addEventListener('popstate', function (e) {
-        if (Window.history.state.name === null) {
+        if (!Window.history) {
           var xData = Object.assign({}, data);
           xData = !fn ? options.init(xData) : fn(xData);
-          xData = states[0].render(xData);
+          xData = methodRegister[states[0].name].render(xData);
           data = Object.assign({}, data, xData);
+          Window.history.pushState(state[0], state[0].name, '#' + state[0].name);
         } else {
-          jumpTo(Window.history.state.name);
+          var index = arrayObjectIndexOf(states, Window.location.hash.slice(1), 'name');
+          Window.history.pushState(state[index], state[index].name, '#' + state[index].name);
+          jumpTo(Window.location.hash.slice(1));
         }
       });
       Window.addEventListener('resize', function (e) {
@@ -211,8 +214,11 @@ d3_state_handler = function (exports) {
         xData = !fn ? options.init(xData) : fn(xData);
         xData = methodRegister[states[0].name].render(xData);
         data = Object.assign({}, data, xData);
+        Window.history.pushState(state[0], state[0].name, '#' + state[0].name);
       } else {
-        jumpTo(Window.history.state.name);
+        var index = arrayObjectIndexOf(states, Window.location.hash.slice(1), 'name');
+        Window.history.pushState(state[index], state[index].name, '#' + state[index].name);
+        jumpTo(Window.location.hash.slice(1));
       }
     };
     var api = {

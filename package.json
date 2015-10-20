@@ -1,11 +1,12 @@
 {
   "name": "d3-state-handler",
-  "version": "0.4.2",
+  "version": "0.4.3",
   "description": "A module for managing states allowing users to toggle between d3 charts.",
   "main": "lib/d3-state-handler.js",
   "repository": "https://github.com/ejmurra/d3-state-handler",
   "scripts": {
-    "test": "node ./node_modules/intern/bin/intern-client config=tests/intern"
+    "test": "node ./node_modules/intern/bin/intern-client config=tests/intern",
+    "prepublish": "gulp publish"
   },
   "babel": {
     "plugins": [
