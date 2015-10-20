@@ -104,6 +104,12 @@ const StateHandler = function StateHandler(Window,opts) {
         return state;
     };
 
+    let resize = () => {
+        let xData = Object.assign({},data);
+        xData = states[currentIndex].resize(xData);
+        data = Object.assign({},data,xData);
+    };
+
     /*
      * Public Methods
      */
@@ -116,13 +122,6 @@ const StateHandler = function StateHandler(Window,opts) {
 
     let currentState = () => {
         return states[currentIndex];
-    };
-
-    let start = (fn) => {
-        let xData = Object.assign({},data);
-        xData = !fn ? options.init(xData) : fn(xData);
-        xData = states[0].render(xData);
-        data = Object.assign({},data,xData);
     };
 
     let remove = (name) => {
@@ -221,10 +220,33 @@ const StateHandler = function StateHandler(Window,opts) {
         }
     };
 
-    let resize = () => {
-        let xData = Object.assign({},data);
-        xData = states[currentIndex].resize(xData);
-        data = Object.assign({},data,xData);
+    let start = (fn) => {
+        // Set up listeners for popState and resize
+        Window.addEventListener('popstate',(e) => {
+            if (Window.history.state.name === null) {
+                let xData = Object.assign({},data);
+                xData = !fn ? options.init(xData) : fn(xData);
+                xData = states[0].render(xData);
+                data = Object.assign({},data,xData);
+            } else {
+                jumpTo(Window.history.state.name);
+            }
+        });
+        Window.addEventListener('resize',(e) => {
+            resize();
+        });
+
+        // Bootstrap application
+        if (!Window.location.hash || Window.location.hash.slice(1) === states[0].name) {
+            let xData = Object.assign({},data);
+            xData = !fn ? options.init(xData) : fn(xData);
+            xData = methodRegister[states[0].name].render(xData);
+            data = Object.assign({},data,xData);
+        } else {
+            jumpTo(Window.history.state.name);
+        }
+
+
     };
 
     let api = {
@@ -233,7 +255,6 @@ const StateHandler = function StateHandler(Window,opts) {
         currentState: currentState,
         prev: prev,
         remove: remove,
-        resize: resize,
         load: loadState,
         jumpTo: jumpTo,
         start: start

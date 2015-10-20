@@ -5,8 +5,7 @@
   "main": "lib/d3-state-handler.js",
   "repository": "https://github.com/ejmurra/d3-state-handler",
   "scripts": {
-    "test": "node ./node_modules/intern/bin/intern-client config=tests/intern",
-    "prepublish": "node ./node_modules/intern/bin/intern-client config=tests/intern"
+    "test": "node ./node_modules/intern/bin/intern-client config=tests/intern"
   },
   "babel": {
     "plugins": [

@@ -96,6 +96,11 @@ d3_state_handler = function (exports) {
       states.push(state);
       return state;
     };
+    var resize = function resize() {
+      var xData = Object.assign({}, data);
+      xData = states[currentIndex].resize(xData);
+      data = Object.assign({}, data, xData);
+    };
     /*
      * Public Methods
      */
@@ -107,12 +112,6 @@ d3_state_handler = function (exports) {
     };
     var currentState = function currentState() {
       return states[currentIndex];
-    };
-    var start = function start(fn) {
-      var xData = Object.assign({}, data);
-      xData = !fn ? options.init(xData) : fn(xData);
-      xData = states[0].render(xData);
-      data = Object.assign({}, data, xData);
     };
     var remove = function remove(name) {
       var index = arrayObjectIndexOf(states, name, 'name');
@@ -191,10 +190,30 @@ d3_state_handler = function (exports) {
         throw new Error('No state before current state (' + JSON.stringify(thisState) + ')');
       }
     };
-    var resize = function resize() {
-      var xData = Object.assign({}, data);
-      xData = states[currentIndex].resize(xData);
-      data = Object.assign({}, data, xData);
+    var start = function start(fn) {
+      // Set up listeners for popState and resize
+      Window.addEventListener('popstate', function (e) {
+        if (Window.history.state.name === null) {
+          var xData = Object.assign({}, data);
+          xData = !fn ? options.init(xData) : fn(xData);
+          xData = states[0].render(xData);
+          data = Object.assign({}, data, xData);
+        } else {
+          jumpTo(Window.history.state.name);
+        }
+      });
+      Window.addEventListener('resize', function (e) {
+        resize();
+      });
+      // Bootstrap application
+      if (!Window.location.hash || Window.location.hash.slice(1) === states[0].name) {
+        var xData = Object.assign({}, data);
+        xData = !fn ? options.init(xData) : fn(xData);
+        xData = methodRegister[states[0].name].render(xData);
+        data = Object.assign({}, data, xData);
+      } else {
+        jumpTo(Window.history.state.name);
+      }
     };
     var api = {
       next: next,
@@ -202,7 +221,6 @@ d3_state_handler = function (exports) {
       currentState: currentState,
       prev: prev,
       remove: remove,
-      resize: resize,
       load: loadState,
       jumpTo: jumpTo,
       start: start
