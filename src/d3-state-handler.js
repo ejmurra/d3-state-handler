@@ -106,7 +106,7 @@ const StateHandler = function StateHandler(Window,opts) {
 
     let resize = () => {
         let xData = Object.assign({},data);
-        xData = states[currentIndex].resize(xData);
+        xData = methodRegister[states[currentIndex].name].resize(xData);
         data = Object.assign({},data,xData);
     };
 
@@ -223,10 +223,10 @@ const StateHandler = function StateHandler(Window,opts) {
     let start = (fn) => {
         // Set up listeners for popState and resize
         Window.addEventListener('popstate',(e) => {
-            if (Window.history.state.name === null) {
+            if (!Window.history) {
                 let xData = Object.assign({},data);
                 xData = !fn ? options.init(xData) : fn(xData);
-                xData = states[0].render(xData);
+                xData = methodRegister[states[0].name].render(xData);
                 data = Object.assign({},data,xData);
             } else {
                 jumpTo(Window.history.state.name);
