@@ -53,7 +53,7 @@ const StateHandler = function StateHandler(Window,opts) {
     // This function just lets data flow through it unmutated. Used as a filler for missing methods on state objects
     const substitute = function(data) {return data};
 
-    let options = opts || {
+    let defaults = {
             loop: false,        // Whether last state should hook into first state and vice versa
             init: substitute,   // Function to run before calling the first state
             jumpState: {},      // Contract states must adhere to when returning from jumpOut
@@ -61,6 +61,8 @@ const StateHandler = function StateHandler(Window,opts) {
             load: substitute    // Function to be called when a user loads a non-first state from a URL. This function
                                     // receives data as a parameter and should return an object that is equal to jumpState.
         };
+
+    let options = Object.assign({},opts,defaults);
 
     // For easy reference and so that const is enforced by babel
     const jumpState = options.jumpState;
